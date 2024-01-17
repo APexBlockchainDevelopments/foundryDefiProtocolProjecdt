@@ -1,19 +1,23 @@
-<!-- @format -->
-
-# Foundry Smart Contract Lottery
+# Foundry DeFi Stablecoin
 
 This is a section of the Cyfrin Foundry Solidity Course.
 
-*[⭐️ (3:04:09) | Lesson 9: Foundry Smart Contract Lottery](https://www.youtube.com/watch?v=sas02qSFZ74&t=11049s)*
+[DSCEngine Example](https://sepolia.etherscan.io/address/0x091ea0838ebd5b7dda2f2a641b068d6d59639b98#code)
+[Decentralized Stablecoin Example](https://sepolia.etherscan.io/address/0xf30021646269007b0bdc0763fd736c6380602f2f#code)
 
-- [Foundry Smart Contract Lottery](#foundry-smart-contract-lottery)
+# About
+
+This project is meant to be a stablecoin where users can deposit WETH and WBTC in exchange for a token that will be pegged to the USD.
+
+- [Foundry DeFi Stablecoin](#foundry-defi-stablecoin)
+- [About](#about)
 - [Getting Started](#getting-started)
   - [Requirements](#requirements)
   - [Quickstart](#quickstart)
     - [Optional Gitpod](#optional-gitpod)
+- [Updates](#updates)
 - [Usage](#usage)
   - [Start a local node](#start-a-local-node)
-  - [Library](#library)
   - [Deploy](#deploy)
   - [Deploy - Other Network](#deploy---other-network)
   - [Testing](#testing)
@@ -22,6 +26,7 @@ This is a section of the Cyfrin Foundry Solidity Course.
   - [Scripts](#scripts)
   - [Estimate gas](#estimate-gas)
 - [Formatting](#formatting)
+- [Slither](#slither)
 - [Thank you!](#thank-you)
 
 # Getting Started
@@ -36,8 +41,8 @@ This is a section of the Cyfrin Foundry Solidity Course.
 ## Quickstart
 
 ```
-git clone https://github.com/Cyfrin/foundry-smart-contract-lottery-f23
-cd foundry-smart-contract-lottery-f23
+git clone https://github.com/Cyfrin/foundry-defi-stablecoin-f23
+cd foundry-defi-stablecoin-f23
 forge build
 ```
 
@@ -45,7 +50,11 @@ forge build
 
 If you can't or don't want to run and install locally, you can work with this repo in Gitpod. If you do this, you can skip the `clone this repo` part.
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#github.com/Cyfrin/foundry-smart-contract-lottery-f23)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#github.com/PatrickAlphaC/foundry-smart-contract-lottery-f23)
+
+# Updates
+
+- The latest version of openzeppelin-contracts has changes in the ERC20Mock file. To follow along with the course, you need to install version 4.8.3 which can be done by `forge install openzeppelin/openzeppelin-contracts@v4.8.3 --no-commit` instead of `forge install openzeppelin/openzeppelin-contracts --no-commit`
 
 # Usage
 
@@ -53,14 +62,6 @@ If you can't or don't want to run and install locally, you can work with this re
 
 ```
 make anvil
-```
-
-## Library
-
-If you're having a hard time installing the chainlink library, you can optionally run this command. 
-
-```
-forge install smartcontractkit/chainlink-brownie-contracts@0.6.1 --no-commit
 ```
 
 ## Deploy
@@ -84,22 +85,22 @@ We talk about 4 test tiers in the video.
 3. Forked
 4. Staging
 
-This repo we cover #1 and #3.
+In this repo we cover #1 and Fuzzing.
 
 ```
 forge test
-```
-
-or
-
-```
-forge test --fork-url $SEPOLIA_RPC_URL
 ```
 
 ### Test Coverage
 
 ```
 forge coverage
+```
+
+and for coverage based testing:
+
+```
+forge coverage --report debug
 ```
 
 # Deployment to a testnet or mainnet
@@ -124,30 +125,28 @@ Head over to [faucets.chain.link](https://faucets.chain.link/) and get some test
 make deploy ARGS="--network sepolia"
 ```
 
-This will setup a ChainlinkVRF Subscription for you. If you already have one, update it in the `scripts/HelperConfig.s.sol` file. It will also automatically add your contract as a consumer.
-
-3. Register a Chainlink Automation Upkeep
-
-[You can follow the documentation if you get lost.](https://docs.chain.link/chainlink-automation/compatible-contracts)
-
-Go to [automation.chain.link](https://automation.chain.link/new) and register a new upkeep. Choose `Custom logic` as your trigger mechanism for automation. Your UI will look something like this once completed:
-
-![Automation](./img/automation.png)
-
 ## Scripts
 
-After deploying to a testnet or local net, you can run the scripts.
+Instead of scripts, we can directly use the `cast` command to interact with the contract.
 
-Using cast deployed locally example:
+For example, on Sepolia:
 
-```
-cast send <RAFFLE_CONTRACT_ADDRESS> "enterRaffle()" --value 0.1ether --private-key <PRIVATE_KEY> --rpc-url $SEPOLIA_RPC_URL
-```
-
-or, to create a ChainlinkVRF Subscription:
+1. Get some WETH
 
 ```
-make createSubscription ARGS="--network sepolia"
+cast send 0xdd13E55209Fd76AfE204dBda4007C227904f0a81 "deposit()" --value 0.1ether --rpc-url $SEPOLIA_RPC_URL --private-key $PRIVATE_KEY
+```
+
+2. Approve the WETH
+
+```
+cast send 0xdd13E55209Fd76AfE204dBda4007C227904f0a81 "approve(address,uint256)" 0x091EA0838eBD5b7ddA2F2A641B068d6D59639b98 1000000000000000000 --rpc-url $SEPOLIA_RPC_URL --private-key $PRIVATE_KEY
+```
+
+3. Deposit and Mint DSC
+
+```
+cast send 0x091EA0838eBD5b7ddA2F2A641B068d6D59639b98 "depositCollateralAndMintDsc(address,uint256,uint256)" 0xdd13E55209Fd76AfE204dBda4007C227904f0a81 100000000000000000 10000000000000000 --rpc-url $SEPOLIA_RPC_URL --private-key $PRIVATE_KEY
 ```
 
 ## Estimate gas
@@ -168,4 +167,11 @@ To run code formatting:
 forge fmt
 ```
 
+# Slither
+
+```
+slither :; slither . --config-file slither.config.json
+```
+
 # Thank you!
+
